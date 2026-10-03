@@ -6,10 +6,12 @@ public class Memoria {
 
     private final int tamanho;
     private final LinkedList<BlocoMemoria> blocos;
+    private int indiceNextFit;
 
     public Memoria() {
         this.tamanho = 1000;
         this.blocos = new LinkedList<>();
+        this.indiceNextFit = 0;
 
         // Inicialmente toda a memória está livre
         blocos.add(new BlocoMemoria(0, tamanho));
@@ -30,6 +32,7 @@ public class Memoria {
             case FIRST_FIT:
                 return alocarFirstFit(processo);
             case NEXT_FIT:
+                return alocarNextFit(processo);
             case BEST_FIT:
                 return alocarBestFit(processo);
             case WORST_FIT:
@@ -105,6 +108,41 @@ public class Memoria {
             ocuparBloco(piorIndice, processo);
             return true;
         }
+
+        return false;
+    }
+
+    private boolean alocarNextFit(Processo processo) {
+
+        if (blocos.isEmpty()) {
+            return false;
+        }
+
+        // Garante que o índice continue válido caso a lista tenha sido alterada
+        indiceNextFit = indiceNextFit % blocos.size();
+
+        int indiceInicial = indiceNextFit;
+
+        do {
+
+            BlocoMemoria bloco = blocos.get(indiceNextFit);
+
+            if (bloco.isLivre()
+                    && bloco.getTamanho() >= processo.getTamanho()) {
+
+                int indiceAlocado = indiceNextFit;
+
+                ocuparBloco(indiceAlocado, processo);
+
+                // A próxima busca continuará depois do bloco utilizado
+                indiceNextFit = (indiceAlocado + 1) % blocos.size();
+
+                return true;
+            }
+
+            indiceNextFit = (indiceNextFit + 1) % blocos.size();
+
+        } while (indiceNextFit != indiceInicial);
 
         return false;
     }
