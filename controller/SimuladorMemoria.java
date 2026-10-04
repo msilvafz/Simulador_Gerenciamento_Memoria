@@ -6,6 +6,7 @@ import java.util.Random;
 
 import model.Memoria;
 import model.Processo;
+import model.ResultadoSimulacao;
 import model.TipoAlgoritmoAlocacao;
 import service.GeradorDeProcessos;
 
@@ -17,15 +18,25 @@ public class SimuladorMemoria {
     private final List<Processo> processosNaMemoria;
     private final Random random;
 
+    private int totalProcessosGerados;
+    private int totalProcessosDescartados;
+    private int somaTamanhoProcessos;
+    private double somaPercentualOcupacao;
+
     public SimuladorMemoria(TipoAlgoritmoAlocacao algoritmo) {
         this.memoria = new Memoria();
         this.gerador = new GeradorDeProcessos();
         this.algoritmo = algoritmo;
         this.processosNaMemoria = new ArrayList<>();
         this.random = new Random();
+
+        this.totalProcessosGerados = 0;
+        this.totalProcessosDescartados = 0;
+        this.somaTamanhoProcessos = 0;
+        this.somaPercentualOcupacao = 0;
     }
 
-    public void executar(int segundos) {
+    public ResultadoSimulacao executar(int segundos) {
 
         System.out.println("========================================");
         System.out.println("       INICIANDO SIMULACAO");
@@ -40,12 +51,26 @@ public class SimuladorMemoria {
 
             removerProcessosAleatorios();
 
+            somaPercentualOcupacao += memoria.getPercentualOcupacao();
+
             memoria.imprimirMemoria();
         }
 
         System.out.println("\n========================================");
         System.out.println("        SIMULACAO FINALIZADA");
         System.out.println("========================================");
+
+        double tamanhoMedioProcessos = (double) somaTamanhoProcessos / totalProcessosGerados;
+
+        double ocupacaoMediaMemoria = somaPercentualOcupacao / segundos;
+
+        double taxaDescarte = ((double) totalProcessosDescartados
+                / totalProcessosGerados) * 100;
+
+        return new ResultadoSimulacao(
+                tamanhoMedioProcessos,
+                ocupacaoMediaMemoria,
+                taxaDescarte);
     }
 
     private void gerarEAlocarProcessos() {
@@ -53,6 +78,10 @@ public class SimuladorMemoria {
         for (int i = 0; i < 2; i++) {
 
             Processo processo = gerador.gerarProcesso();
+
+            // Registra informações para as métricas
+            totalProcessosGerados++;
+            somaTamanhoProcessos += processo.getTamanho();
 
             System.out.println("Gerado: " + processo);
 
@@ -66,6 +95,8 @@ public class SimuladorMemoria {
                         "PID " + processo.getId() + " alocado.");
 
             } else {
+
+                totalProcessosDescartados++;
 
                 System.out.println(
                         "PID " + processo.getId()
@@ -94,11 +125,9 @@ public class SimuladorMemoria {
 
         for (int i = 0; i < quantidadeRemover; i++) {
 
-            int indiceAleatorio =
-                    random.nextInt(processosNaMemoria.size());
+            int indiceAleatorio = random.nextInt(processosNaMemoria.size());
 
-            Processo processo =
-                    processosNaMemoria.remove(indiceAleatorio);
+            Processo processo = processosNaMemoria.remove(indiceAleatorio);
 
             memoria.removerProcesso(processo.getId());
 

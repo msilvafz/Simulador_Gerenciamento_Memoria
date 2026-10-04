@@ -214,6 +214,25 @@ public class Memoria {
         }
     }
 
+    public int getTamanhoOcupado() {
+
+        int ocupado = 0;
+
+        for (BlocoMemoria bloco : blocos) {
+
+            if (!bloco.isLivre()) {
+                ocupado += bloco.getTamanho();
+            }
+        }
+
+        return ocupado;
+    }
+
+    public double getPercentualOcupacao() {
+
+        return ((double) getTamanhoOcupado() / tamanho) * 100;
+    }
+
     public void imprimirMemoria() {
 
         System.out.println("\n========================================");
