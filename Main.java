@@ -1,22 +1,34 @@
-import controller.SimuladorMemoria;
-import model.ResultadoSimulacao;
+import controller.ExperimentoAlocacao;
+import model.ResultadoExperimento;
 import model.TipoAlgoritmoAlocacao;
 
 public class Main {
 
     public static void main(String[] args) {
 
-        SimuladorMemoria simulador = new SimuladorMemoria(
-                TipoAlgoritmoAlocacao.FIRST_FIT);
+        ExperimentoAlocacao experimento = new ExperimentoAlocacao();
 
-        ResultadoSimulacao resultado = simulador.executar(10);
+        int quantidadeExecucoes = 100;
+        int segundosPorExecucao = 100;
 
-        System.out.println("\n========================================");
-        System.out.println("       RESULTADO DA SIMULACAO");
-        System.out.println("========================================");
+        System.out.println("============================================================");
+        System.out.println("           EXPERIMENTO DE ALOCACAO DE MEMORIA");
+        System.out.println("============================================================");
+        System.out.println("Execucoes por algoritmo: " + quantidadeExecucoes);
+        System.out.println("Segundos por execucao: " + segundosPorExecucao);
+        System.out.println("============================================================");
 
-        System.out.println(resultado);
+        for (TipoAlgoritmoAlocacao algoritmo : TipoAlgoritmoAlocacao.values()) {
 
-        System.out.println("========================================");
+            ResultadoExperimento resultado = experimento.executar(
+                    algoritmo,
+                    quantidadeExecucoes,
+                    segundosPorExecucao);
+
+            System.out.println();
+            System.out.println("--------------------------------------------");
+            System.out.println(resultado);
+            System.out.println("--------------------------------------------");
+        }
     }
 }

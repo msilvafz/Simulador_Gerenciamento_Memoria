@@ -1,204 +1,235 @@
-## Visão Geral da Simulação
+# Simulador de Gerenciamento de Memória
 
-A simulação é composta por quatro entidades principais:
+Projeto desenvolvido para a disciplina de Sistemas Operacionais, com o objetivo de simular diferentes algoritmos de alocação de memória e comparar seus comportamentos através de métricas obtidas experimentalmente.
 
-- **Processo** – representa uma tarefa com um número de instruções a serem executadas.
-- **GeradorDeProcessos** – cria novos processos periodicamente (de forma probabilística) com ID único e burst aleatório.
-- **Escalonador** – mantém a fila de prontos e, sob demanda da CPU, seleciona o próximo processo a ser executado conforme o algoritmo configurado.
-- **CPU** – executa um ciclo de clock, pedindo um processo ao escalonador, executando uma instrução e dormindo por um intervalo configurável.
+## Objetivo
 
-O controlador (`SimuladorController`) orquestra a criação dos componentes e inicia a thread da CPU. A simulação termina quando a fila de prontos se esvazia e não há mais processos em execução.
+O simulador representa uma memória de tamanho fixo de **1000 unidades**, organizada através de uma lista encadeada de blocos livres e ocupados.
 
----
+Durante a simulação, processos são gerados com tamanhos aleatórios entre **10 e 50 unidades** e precisam ser alocados utilizando um dos algoritmos disponíveis.
 
-## Estrutura do Projeto
+Caso nenhum bloco livre comporte o processo, ele é descartado.
 
+## Algoritmos implementados
+
+O projeto possui quatro algoritmos de alocação:
+
+- **First Fit:** utiliza o primeiro bloco livre que comporta o processo.
+- **Next Fit:** continua a busca a partir da posição onde a última alocação terminou.
+- **Best Fit:** utiliza o menor bloco livre capaz de comportar o processo.
+- **Worst Fit:** utiliza o maior bloco livre disponível.
+
+## Funcionamento da memória
+
+A memória possui tamanho total de:
+
+```text
+1000 unidades
 ```
-src/
-├── controller/
-│   └── SimuladorController.java
-├── model/
+
+Cada região é representada por um `BlocoMemoria`, que pode estar livre ou associado a um processo.
+
+Exemplo:
+
+```text
+[PID 1 | 30]
+[LIVRE | 50]
+[PID 2 | 40]
+[LIVRE | 880]
+```
+
+Quando um processo é removido, seu bloco volta a ficar livre.
+
+Caso existam blocos livres consecutivos, eles são unidos para representar corretamente uma única região contínua de memória.
+
+## Geração de processos
+
+A classe `GeradorDeProcessos` é responsável pela criação dos processos.
+
+Cada processo possui:
+
+```text
+ID único e incremental
+Tamanho aleatório entre 10 e 50
+```
+
+Exemplo:
+
+```text
+[PID: 1 | Tamanho: 28]
+[PID: 2 | Tamanho: 41]
+[PID: 3 | Tamanho: 17]
+```
+
+## Simulação
+
+Cada execução representa **100 segundos simulados**.
+
+A cada segundo:
+
+1. São gerados **2 novos processos**.
+2. Os processos tentam ser alocados utilizando o algoritmo selecionado.
+3. Caso não exista espaço adequado, o processo é descartado.
+4. São escolhidos aleatoriamente **1 ou 2 processos** para sair da memória.
+5. A ocupação da memória é registrada.
+
+O tempo é simulado através dos ciclos do programa, portanto não é necessário esperar 100 segundos reais para cada execução.
+
+## Métricas
+
+Ao final de cada execução são calculadas três métricas:
+
+### Tamanho médio dos processos
+
+Representa a média dos tamanhos de todos os processos gerados durante a simulação.
+
+### Ocupação média da memória
+
+Representa o percentual médio de memória ocupada ao longo dos 100 segundos simulados.
+
+### Taxa de descarte
+
+Representa o percentual de processos que não conseguiram ser alocados por falta de um bloco livre adequado.
+
+## Experimento
+
+Para reduzir a influência da aleatoriedade, cada algoritmo é executado:
+
+```text
+100 vezes
+```
+
+Cada execução possui:
+
+```text
+100 segundos
+2 processos gerados por segundo
+200 processos gerados por execução
+```
+
+Portanto, para cada algoritmo são gerados aproximadamente:
+
+```text
+20.000 processos
+```
+
+Considerando os quatro algoritmos:
+
+```text
+80.000 processos
+```
+
+Ao final, são calculadas as médias globais das 100 execuções.
+
+## Resultados obtidos
+
+Em uma execução do experimento com 100 repetições por algoritmo, foram obtidos os seguintes resultados:
+
+| Algoritmo | Tamanho médio | Ocupação média | Taxa de descarte |
+|---|---:|---:|---:|
+| First Fit | 30,10 | 58,70% | 10,22% |
+| Next Fit | 29,99 | 57,76% | 10,56% |
+| Best Fit | 29,89 | 59,50% | 9,15% |
+| Worst Fit | 29,85 | 54,60% | 11,29% |
+
+Os resultados podem apresentar pequenas variações entre execuções devido à geração e remoção aleatória dos processos.
+
+Neste experimento, o **Best Fit** apresentou a maior ocupação média da memória e a menor taxa média de descarte.
+
+O **Worst Fit** apresentou a menor ocupação média e a maior taxa de descarte entre os quatro algoritmos.
+
+## Estrutura do projeto
+
+```text
+src
+│
+├── controller
+│   ├── SimuladorMemoria.java
+│   └── ExperimentoAlocacao.java
+│
+├── model
 │   ├── Processo.java
-│   └── TipoAlgoritmo.java
-├── service/
-│   ├── CPU.java
-│   ├── Escalonador.java
+│   ├── BlocoMemoria.java
+│   ├── Memoria.java
+│   ├── TipoAlgoritmoAlocacao.java
+│   ├── ResultadoSimulacao.java
+│   └── ResultadoExperimento.java
+│
+├── service
 │   └── GeradorDeProcessos.java
+│
 └── Main.java
 ```
 
----
+## Principais classes
 
-## Detalhamento das Classes
+### Processo
 
-### 1. `Processo` (model)
+Representa um processo contendo:
 
-Atributos:
-- `id` – identificador único.
-- `quantidadeInstrucoes` – contador de instruções restantes (decrementado a cada execução).
-- `instrucoesTotais` – valor inicial (usado para estatísticas).
-- `historicoExecucao` – lista dos ciclos de clock em que cada instrução foi executada.
-
-Métodos principais:
-- `registrarExecucao(int cicloClock)` – decrementa o contador e armazena o ciclo.
-- `isFinalizado()` – retorna `true` se `quantidadeInstrucoes == 0`.
-- `imprimirHistorico()` – exibe em qual ciclo cada instrução foi executada, útil para depuração.
-
-**Paralelo com a teoria:** cada processo possui um *burst time* (tempo de execução) representado pelo número de instruções. O histórico permite rastrear o escalonamento ao longo do tempo.
-
----
-
-### 2. `GeradorDeProcessos` (service)
-
-Utiliza um contador atômico para IDs incrementais e um gerador aleatório. O método `gerarProcesso()` cria um novo processo com quantidade de instruções entre **10 e 50** (inclusive), conforme especificação.
-
-**Paralelo com a teoria:** em sistemas reais, novos processos chegam a intervalos aleatórios. Aqui, a geração é controlada probabilisticamente, simulando a natureza estocástica das cargas de trabalho.
-
----
-
-### 3. `Escalonador` (service)
-
-É o coração da simulação. Mantém três filas distintas, uma para cada algoritmo, e implementa a lógica de seleção. Recebe no construtor o tipo de algoritmo e o *quantum* (usado apenas no Round Robin).
-
-#### Filas:
-- `filaFCFS` – `LinkedList` (FIFO).
-- `filaSJF` – `PriorityQueue` ordenada pelo número de instruções restantes (menor primeiro).
-- `filaRoundRobin` – `LinkedList` (FIFO para reenfileiramento).
-
-#### Métodos principais:
-
-- `adicionarProcesso(Processo p)` – insere o processo na fila correspondente ao algoritmo ativo.
-- `obterProximoProcesso(Processo processoAtual)` – é chamado a cada ciclo pela CPU. Antes de selecionar, há **25% de chance** de gerar um novo processo (simulando chegada assíncrona). Em seguida, delega para o método específico do algoritmo.
-- `escalonarFCFS`, `escalonarSJF`, `escalonarRoundRobin` – implementam a lógica de cada política.
-- `possuiProcessos()` – verifica se há processos em qualquer fila, usado para decidir quando a simulação deve terminar.
-
-**Paralelo com a teoria:** o escalonador é o componente responsável por implementar a política de escalonamento. Ele decide qual processo será executado a cada ciclo, baseando‑se no estado das filas e no algoritmo configurado.
-
----
-
-### 4. `CPU` (service)
-
-Implementa `Runnable` e executa um loop enquanto houver processos na fila ou um processo atual em execução. Em cada iteração (ciclo de clock):
-
-1. Solicita o próximo processo ao escalonador (`escalonador.obterProximoProcesso(processoAtual)`).
-2. Se houver processo, registra a execução de uma instrução (`processoAtual.registrarExecucao()`).
-3. Se o processo finalizou, imprime seu histórico e anula a referência.
-4. Aguarda (`Thread.sleep(msPorCiclo)`) para simular o tempo de ciclo.
-
-O loop termina quando `escalonador.possuiProcessos()` retorna `false` **e** `processoAtual == null`.
-
-**Paralelo com a teoria:** a CPU executa as instruções de um processo por vez. O ciclo de clock é abstraído pelo `sleep`, permitindo visualizar a evolução em tempo real.
-
----
-
-### 5. `SimuladorController` (controller)
-
-Responsável por:
-- Instanciar o `GeradorDeProcessos`, o `Escalonador` e a `CPU`.
-- Adicionar a carga inicial de processos (parâmetro `cargaInicial`).
-- Iniciar a thread da CPU e aguardar seu término (`join()`).
-
-A simulação encerra naturalmente quando não há mais processos a executar, sem necessidade de definir uma duração fixa.
-
----
-
-### 6. `Main` (ponto de entrada)
-
-Cria uma instância do controlador e invoca `iniciarSimulacao` com os parâmetros desejados:
-
-- `TipoAlgoritmo` – `FCFS`, `SJF` ou `ROUND_ROBIN`.
-- `quantum` – valor inteiro (relevante apenas para Round Robin).
-- `tempoClockMs` – intervalo em milissegundos entre ciclos (ex.: 1000 ms para visualização lenta).
-- `cargaInicial` – número de processos criados antes de iniciar a CPU.
-
-Exemplo para testar SJF:
-```java
-controller.iniciarSimulacao(TipoAlgoritmo.SJF, 2, 1000, 2);
+```text
+ID
+Tamanho de alocação
 ```
 
----
+### BlocoMemoria
 
-## Fluxo de Execução
+Representa uma região da memória, podendo estar livre ou ocupada por um processo.
 
-1. O `Main` chama o controlador com os parâmetros.
-2. O controlador gera a carga inicial de processos e os insere no escalonador.
-3. A thread da CPU é iniciada e entra em loop.
-4. A cada ciclo:
-   - O escalonador decide se gera um novo processo (probabilidade de 25%).
-   - O escalonador seleciona o próximo processo conforme o algoritmo.
-   - A CPU executa uma instrução desse processo.
-   - Se finalizado, o processo é removido e seu histórico é exibido.
-5. Quando não há processos na fila e o processo atual é nulo, o loop termina.
-6. A CPU é desligada e o controlador finaliza a simulação.
+### Memoria
 
----
+Responsável pelo gerenciamento dos blocos e implementação dos algoritmos:
 
-## Algoritmos de Escalonamento – Teoria vs. Código
-
-### FCFS (First‑Come, First‑Served)
-
-**Teoria:** os processos são executados na ordem de chegada. É **não preemptivo** – uma vez que um processo começa, ele ocupa a CPU até terminar.
-
-**Código:** a `filaFCFS` é uma `LinkedList`. O método `escalonarFCFS` mantém o processo atual enquanto ele não finalizar; quando finaliza, retira o próximo da fila (`poll()`).
-```java
-private Processo escalonarFCFS(Processo atual) {
-    if (atual != null && !atual.isFinalizado()) return atual;
-    return filaFCFS.poll();
-}
+```text
+First Fit
+Next Fit
+Best Fit
+Worst Fit
 ```
 
----
+Também realiza a remoção de processos e a união de blocos livres adjacentes.
 
-### SJF (Shortest Job First)
+### SimuladorMemoria
 
-**Teoria:** seleciona o processo com o menor *burst time* (tempo de execução) entre todos os prontos. A versão implementada é **não preemptiva** – o processo em execução só é trocado ao finalizar.
+Controla uma execução da simulação, incluindo:
 
-**Código:** a `filaSJF` é uma `PriorityQueue` que ordena os processos por `getQuantidadeInstrucoes()` (menor primeiro). O método `escalonarSJF` tem a mesma estrutura do FCFS, mas obtém o próximo da `PriorityQueue`.
-```java
-private Processo escalonarSJF(Processo atual) {
-    if (atual != null && !atual.isFinalizado()) return atual;
-    return filaSJF.poll();
-}
+```text
+Geração de processos
+Alocação
+Remoção aleatória
+Controle dos segundos
+Coleta das métricas
 ```
 
----
+### ExperimentoAlocacao
 
-### Round Robin
+Executa cada algoritmo repetidamente e calcula as médias globais dos resultados.
 
-**Teoria:** cada processo recebe uma fatia de tempo (*quantum*) para executar. Se não terminar dentro do quantum, é preemptado e colocado no final da fila de prontos. É **preemptivo** por natureza.
+## Como executar
 
-**Código:** a `filaRoundRobin` é uma `LinkedList`. O método `escalonarRoundRobin` controla o `quantumAtual`:
-- Se o processo atual finalizou, zera o quantum.
-- Se o quantum foi atingido (`quantumAtual >= quantum`), o processo é reenfileirado e o quantum é zerado.
-- Caso contrário, incrementa o quantum e retorna o mesmo processo.
-- Se o processo atual é nulo ou foi preemptado, retira o próximo da fila e reinicia o quantum.
+O projeto foi desenvolvido em **Java**.
+
+Para executar pelo VS Code:
+
+1. Abra o projeto.
+2. Certifique-se de que o JDK está configurado.
+3. Execute o arquivo `Main.java`.
+
+O `Main` executa automaticamente os quatro algoritmos:
 
 ```java
-private Processo escalonarRoundRobin(Processo atual) {
-    if (atual != null) {
-        if (atual.isFinalizado()) {
-            quantumAtual = 0;
-        } else if (quantumAtual >= quantum) {
-            // preempção
-            filaRoundRobin.add(atual);
-            quantumAtual = 0;
-        } else {
-            quantumAtual++;
-            return atual;
-        }
-    }
-    Processo proximo = filaRoundRobin.poll();
-    if (proximo != null) quantumAtual = 1;
-    return proximo;
-}
+FIRST_FIT
+NEXT_FIT
+BEST_FIT
+WORST_FIT
 ```
 
----
+Cada algoritmo é executado 100 vezes, com 100 segundos simulados por execução.
 
-## Chegada Estocástica de Processos
+## Tecnologias
 
-A simulação incorpora a geração aleatória de novos processos durante a execução. No método `obterProximoProcesso`, há uma probabilidade de **25%** (configurável) de o escalonador solicitar um novo processo ao `GeradorDeProcessos`. Isso representa o comportamento real de sistemas operacionais, onde a carga de trabalho não é estática.
-
-**Por que 25%?** Esse valor é arbitrário e pode ser ajustado para aumentar ou diminuir a taxa de chegada. Quanto maior a probabilidade, mais processos são gerados e a fila tende a crescer, tornando a simulação mais dinâmica.
-
-
+- Java
+- Programação Orientada a Objetos
+- LinkedList
+- Random
+- Algoritmos de gerenciamento de memória

@@ -36,36 +36,46 @@ public class SimuladorMemoria {
         this.somaPercentualOcupacao = 0;
     }
 
-    public ResultadoSimulacao executar(int segundos) {
+    public ResultadoSimulacao executar(int segundos, boolean exibirDetalhes) {
 
-        System.out.println("========================================");
-        System.out.println("       INICIANDO SIMULACAO");
-        System.out.println("       Algoritmo: " + algoritmo);
-        System.out.println("========================================");
+        if (exibirDetalhes) {
+            System.out.println("========================================");
+            System.out.println("       INICIANDO SIMULACAO");
+            System.out.println("       Algoritmo: " + algoritmo);
+            System.out.println("========================================");
+        }
 
         for (int segundo = 1; segundo <= segundos; segundo++) {
 
-            System.out.println("\n---------- SEGUNDO " + segundo + " ----------");
+            if (exibirDetalhes) {
+                System.out.println(
+                        "\n---------- SEGUNDO " + segundo + " ----------");
+            }
 
-            gerarEAlocarProcessos();
+            gerarEAlocarProcessos(exibirDetalhes);
 
-            removerProcessosAleatorios();
+            removerProcessosAleatorios(exibirDetalhes);
 
             somaPercentualOcupacao += memoria.getPercentualOcupacao();
 
-            memoria.imprimirMemoria();
+            if (exibirDetalhes) {
+                memoria.imprimirMemoria();
+            }
         }
 
-        System.out.println("\n========================================");
-        System.out.println("        SIMULACAO FINALIZADA");
-        System.out.println("========================================");
-
-        double tamanhoMedioProcessos = (double) somaTamanhoProcessos / totalProcessosGerados;
+        double tamanhoMedioProcessos = (double) somaTamanhoProcessos
+                / totalProcessosGerados;
 
         double ocupacaoMediaMemoria = somaPercentualOcupacao / segundos;
 
         double taxaDescarte = ((double) totalProcessosDescartados
                 / totalProcessosGerados) * 100;
+
+        if (exibirDetalhes) {
+            System.out.println("\n========================================");
+            System.out.println("        SIMULACAO FINALIZADA");
+            System.out.println("========================================");
+        }
 
         return new ResultadoSimulacao(
                 tamanhoMedioProcessos,
@@ -73,17 +83,18 @@ public class SimuladorMemoria {
                 taxaDescarte);
     }
 
-    private void gerarEAlocarProcessos() {
+    private void gerarEAlocarProcessos(boolean exibirDetalhes) {
 
         for (int i = 0; i < 2; i++) {
 
             Processo processo = gerador.gerarProcesso();
 
-            // Registra informações para as métricas
             totalProcessosGerados++;
             somaTamanhoProcessos += processo.getTamanho();
 
-            System.out.println("Gerado: " + processo);
+            if (exibirDetalhes) {
+                System.out.println("Gerado: " + processo);
+            }
 
             boolean alocado = memoria.alocar(processo, algoritmo);
 
@@ -91,37 +102,42 @@ public class SimuladorMemoria {
 
                 processosNaMemoria.add(processo);
 
-                System.out.println(
-                        "PID " + processo.getId() + " alocado.");
+                if (exibirDetalhes) {
+                    System.out.println(
+                            "PID " + processo.getId()
+                                    + " alocado.");
+                }
 
             } else {
 
                 totalProcessosDescartados++;
 
-                System.out.println(
-                        "PID " + processo.getId()
-                                + " descartado por falta de espaco.");
+                if (exibirDetalhes) {
+                    System.out.println(
+                            "PID " + processo.getId()
+                                    + " descartado por falta de espaco.");
+                }
             }
         }
     }
 
-    private void removerProcessosAleatorios() {
+    private void removerProcessosAleatorios(boolean exibirDetalhes) {
 
         if (processosNaMemoria.isEmpty()) {
             return;
         }
 
-        // Sorteia se serão removidos 1 ou 2 processos
         int quantidadeRemover = random.nextInt(2) + 1;
 
-        // Evita tentar remover mais processos do que existem
         quantidadeRemover = Math.min(
                 quantidadeRemover,
                 processosNaMemoria.size());
 
-        System.out.println(
-                "Processos que sairao da memoria: "
-                        + quantidadeRemover);
+        if (exibirDetalhes) {
+            System.out.println(
+                    "Processos que sairao da memoria: "
+                            + quantidadeRemover);
+        }
 
         for (int i = 0; i < quantidadeRemover; i++) {
 
@@ -131,9 +147,11 @@ public class SimuladorMemoria {
 
             memoria.removerProcesso(processo.getId());
 
-            System.out.println(
-                    "PID " + processo.getId()
-                            + " removido da memoria.");
+            if (exibirDetalhes) {
+                System.out.println(
+                        "PID " + processo.getId()
+                                + " removido da memoria.");
+            }
         }
     }
 }
