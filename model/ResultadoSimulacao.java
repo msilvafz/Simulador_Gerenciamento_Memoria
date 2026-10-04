@@ -2,6 +2,7 @@ package model;
 
 public class ResultadoSimulacao {
 
+    // Métricas calculadas ao final de uma única simulação
     private final double tamanhoMedioProcessos;
     private final double ocupacaoMediaMemoria;
     private final double taxaDescarte;
@@ -28,6 +29,7 @@ public class ResultadoSimulacao {
         return taxaDescarte;
     }
 
+    // Formata o resultado de uma execução para exibição no terminal
     @Override
     public String toString() {
 

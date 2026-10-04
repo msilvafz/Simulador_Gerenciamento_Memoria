@@ -6,6 +6,8 @@ public class Memoria {
 
     private final int tamanho;
     private final LinkedList<BlocoMemoria> blocos;
+
+    // Guarda de onde o Next Fit deve continuar a busca
     private int indiceNextFit;
 
     public Memoria() {
@@ -13,7 +15,7 @@ public class Memoria {
         this.blocos = new LinkedList<>();
         this.indiceNextFit = 0;
 
-        // Inicialmente toda a memória está livre
+        // A memória começa como um único bloco livre de 1000
         blocos.add(new BlocoMemoria(0, tamanho));
     }
 
@@ -25,23 +27,29 @@ public class Memoria {
         return blocos;
     }
 
+    // Direciona a alocação para o algoritmo escolhido
     public boolean alocar(Processo processo, TipoAlgoritmoAlocacao algoritmo) {
 
         switch (algoritmo) {
 
             case FIRST_FIT:
                 return alocarFirstFit(processo);
+
             case NEXT_FIT:
                 return alocarNextFit(processo);
+
             case BEST_FIT:
                 return alocarBestFit(processo);
+
             case WORST_FIT:
                 return alocarWorstFit(processo);
+
             default:
                 return false;
         }
     }
 
+    // First Fit: escolhe o primeiro bloco livre onde o processo cabe
     private boolean alocarFirstFit(Processo processo) {
 
         for (int i = 0; i < blocos.size(); i++) {
@@ -52,7 +60,6 @@ public class Memoria {
                     && bloco.getTamanho() >= processo.getTamanho()) {
 
                 ocuparBloco(i, processo);
-
                 return true;
             }
         }
@@ -60,6 +67,7 @@ public class Memoria {
         return false;
     }
 
+    // Best Fit: escolhe o menor bloco livre onde o processo cabe
     private boolean alocarBestFit(Processo processo) {
 
         int melhorIndice = -1;
@@ -86,6 +94,7 @@ public class Memoria {
         return false;
     }
 
+    // Worst Fit: escolhe o maior bloco livre onde o processo cabe
     private boolean alocarWorstFit(Processo processo) {
 
         int piorIndice = -1;
@@ -112,13 +121,14 @@ public class Memoria {
         return false;
     }
 
+    // Next Fit: continua a busca a partir da última posição utilizada
     private boolean alocarNextFit(Processo processo) {
 
         if (blocos.isEmpty()) {
             return false;
         }
 
-        // Garante que o índice continue válido caso a lista tenha sido alterada
+        // Mantém o índice válido mesmo se a lista mudar de tamanho
         indiceNextFit = indiceNextFit % blocos.size();
 
         int indiceInicial = indiceNextFit;
@@ -134,12 +144,13 @@ public class Memoria {
 
                 ocuparBloco(indiceAlocado, processo);
 
-                // A próxima busca continuará depois do bloco utilizado
+                // Próxima busca começa depois do bloco utilizado
                 indiceNextFit = (indiceAlocado + 1) % blocos.size();
 
                 return true;
             }
 
+            // Faz a busca circular: ao chegar ao fim, volta ao início
             indiceNextFit = (indiceNextFit + 1) % blocos.size();
 
         } while (indiceNextFit != indiceInicial);
@@ -147,6 +158,7 @@ public class Memoria {
         return false;
     }
 
+    // Ocupa o bloco escolhido e cria outro bloco com o espaço restante
     private void ocuparBloco(int indice, Processo processo) {
 
         BlocoMemoria bloco = blocos.get(indice);
@@ -154,13 +166,11 @@ public class Memoria {
         int tamanhoOriginal = bloco.getTamanho();
         int tamanhoProcesso = processo.getTamanho();
 
-        // O bloco passa a representar o processo
         bloco.setTamanho(tamanhoProcesso);
         bloco.setProcesso(processo);
 
         int tamanhoRestante = tamanhoOriginal - tamanhoProcesso;
 
-        // Se sobrou espaço, cria um novo bloco livre logo após o processo
         if (tamanhoRestante > 0) {
 
             int inicioBlocoLivre = bloco.getInicio() + tamanhoProcesso;
@@ -173,6 +183,7 @@ public class Memoria {
         }
     }
 
+    // Remove o processo e transforma seu bloco novamente em espaço livre
     public boolean removerProcesso(int idProcesso) {
 
         for (BlocoMemoria bloco : blocos) {
@@ -180,10 +191,9 @@ public class Memoria {
             if (!bloco.isLivre()
                     && bloco.getProcesso().getId() == idProcesso) {
 
-                // Ao remover o processo, o bloco volta a ficar livre
                 bloco.setProcesso(null);
 
-                // Junta possíveis blocos livres vizinhos
+                // Junta espaços livres que ficaram lado a lado
                 unirBlocosLivres();
 
                 return true;
@@ -193,6 +203,7 @@ public class Memoria {
         return false;
     }
 
+    // Une blocos livres consecutivos em um único bloco maior
     private void unirBlocosLivres() {
 
         for (int i = 0; i < blocos.size() - 1; i++) {
@@ -207,13 +218,13 @@ public class Memoria {
 
                 blocos.remove(i + 1);
 
-                // Volta uma posição para verificar se ainda existem
-                // outros blocos livres consecutivos
+                // Reavalia a posição caso existam mais blocos livres seguidos
                 i--;
             }
         }
     }
 
+    // Soma apenas os blocos ocupados
     public int getTamanhoOcupado() {
 
         int ocupado = 0;
@@ -228,11 +239,13 @@ public class Memoria {
         return ocupado;
     }
 
+    // Calcula o percentual de memória ocupada
     public double getPercentualOcupacao() {
 
         return ((double) getTamanhoOcupado() / tamanho) * 100;
     }
 
+    // Exibe os blocos atuais da memória
     public void imprimirMemoria() {
 
         System.out.println("\n========================================");

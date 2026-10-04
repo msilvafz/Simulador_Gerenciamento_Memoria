@@ -2,8 +2,13 @@ package model;
 
 public class ResultadoExperimento {
 
+    // Identifica qual algoritmo gerou este resultado
     private final TipoAlgoritmoAlocacao algoritmo;
+
+    // Quantidade de simulações usadas para calcular as médias finais
     private final int quantidadeExecucoes;
+
+    // Médias globais obtidas após todas as execuções
     private final double tamanhoMedioProcessos;
     private final double ocupacaoMediaMemoria;
     private final double taxaMediaDescarte;
@@ -42,6 +47,7 @@ public class ResultadoExperimento {
         return taxaMediaDescarte;
     }
 
+    // Formata as médias finais do algoritmo para exibição no terminal
     @Override
     public String toString() {
 

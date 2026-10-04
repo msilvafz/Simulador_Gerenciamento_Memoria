@@ -2,8 +2,13 @@ package model;
 
 public class BlocoMemoria {
 
+    // Posição inicial do bloco dentro da memória
     private int inicio;
+
+    // Tamanho ocupado por este bloco
     private int tamanho;
+
+    // Processo que ocupa o bloco; null significa bloco livre
     private Processo processo;
 
     public BlocoMemoria(int inicio, int tamanho) {
@@ -32,10 +37,12 @@ public class BlocoMemoria {
         this.processo = processo;
     }
 
+    // Bloco está livre quando não possui processo associado
     public boolean isLivre() {
         return processo == null;
     }
 
+    // Exibe o bloco como LIVRE ou mostra o PID que o ocupa
     @Override
     public String toString() {
         if (isLivre()) {
